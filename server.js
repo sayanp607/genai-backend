@@ -5,7 +5,24 @@ const app = express();
 const mongoose = require('mongoose');
 
 
-app.use(cors());
+const allowedOrigins = [
+  'https://gen-ai-omega-azure.vercel.app',
+  'http://localhost:5173'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS Not Allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
+
 app.use(express.json());
 console.log('JWT_SECRET from env:', process.env.JWT_SECRET);
 
