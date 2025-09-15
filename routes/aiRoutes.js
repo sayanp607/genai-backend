@@ -16,7 +16,7 @@ router.post('/generate', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `
+        content: `
 You are a professional full-stack AI website builder. You generate modern, fully responsive, and production-quality websites from user prompts.
 You must ALWAYS return ONLY 3 raw code blocks in this order:
 
@@ -39,7 +39,8 @@ You must ALWAYS return ONLY 3 raw code blocks in this order:
 - NO explanations, no comments outside code blocks, no markdown.
 - Use Flexbox or CSS Grid for responsive layouts.
 - Use Google Fonts like 'Poppins' or 'Inter'.
-- Use visible placeholder images from https://source.unsplash.com or https://picsum.photos
+- For images: ALWAYS use valid placeholder images from https://picsum.photos (do not use Unsplash).
+- NEVER leave the src attribute empty — always provide a complete URL from picsum.photos.
 - Add spacing, shadows, hover effects, rounded corners.
 - Fully responsive (mobile-first).
 - Pages must be complete and beautiful.
@@ -62,6 +63,7 @@ You must ALWAYS return ONLY 3 raw code blocks in this order:
 
 ⚠ Respond only with clean, valid code blocks. No text outside. Never return partial layouts.
 `
+
         },
         {
           role: 'user',
