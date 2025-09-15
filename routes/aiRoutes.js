@@ -1,93 +1,90 @@
 // routes/generate.js
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 require('dotenv').config();
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post('/generate', async (req, res) => {
   const { prompt } = req.body;
-
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const response = await axios.post(
+    'https://openrouter.ai/api/v1/chat/completions',
+    {
+      model: 'meta-llama/llama-3-70b-instruct',
+      messages: [
+        {
+          role: 'system',
+          content: `
+You are a professional full-stack AI website builder. You generate modern, fully responsive, and production-quality websites from user prompts.
+You must ALWAYS return ONLY 3 raw code blocks in this order:
 
-const systemPrompt = `
-You are a senior full-stack AI web developer and creative designer. Generate a highly attractive, responsive, one-page **portfolio website** using only HTML, CSS, and JavaScript.
 
-🚨 STRICT OUTPUT ORDER:
 \`\`\`html
-<!-- Full HTML5 code -->
+<!-- Full HTML5 website structure -->
+
 \`\`\`
 
 \`\`\`css
-/* Full CSS (no <style> tags) */
+/* Complete CSS styles */
 \`\`\`
 
 \`\`\`js
-// Full JavaScript (no <script> tags)
+// JavaScript logic (can include dummy backend simulation)
 \`\`\`
 
-🎨 DESIGN REQUIREMENTS:
-- Bright, modern colors (NO grayscale).
-- Use gradients, glassmorphism, glowing hover effects, and soft shadows.
-- Use Google Fonts like 'Poppins', 'Rubik', or 'Inter'.
-- Use layout via Flexbox or Grid only.
-- All sections must look colorful and well-designed, including:
-  - Hero with background image or gradient
-  - About section with colorful layout
-  - Skills with animated bars or icons
-  - Portfolio with visible images in cards
-  - Testimonials with styled quotes or sliders
-  - Contact form with styled inputs
+❗IMPORTANT RULES:
+- Do NOT include <style> or <script> tags — just raw CSS/JS.
+- NO explanations, no comments outside code blocks, no markdown.
+- Use Flexbox or CSS Grid for responsive layouts.
+- Use Google Fonts like 'Poppins' or 'Inter'.
+- Use visible placeholder images from https://source.unsplash.com or https://picsum.photos
+- Add spacing, shadows, hover effects, rounded corners.
+- Fully responsive (mobile-first).
+- Pages must be complete and beautiful.
 
-🖼️ IMAGE RULES (MANDATORY):
-- Use **working and visible image URLs** (not broken or empty).
-- DO NOT leave \`src\` empty or use generic placeholders that often fail.
-- You MAY use any random image from the internet, BUT it must:
-  - Be a **direct image link** ending in `.jpg`, `.jpeg`, `.png`, or `.webp`
-  - Actually display in the browser
-  - Be accessible without authentication
-- Ensure at least 3–4 images are used visibly across sections like portfolio or testimonials.
+🔧 FOR GENERAL PROMPTS:
+- Include features based on site type (e.g. blog = nav, posts, author section; startup = hero, features, CTA, contact form).
 
-📱 RESPONSIVE:
-- Mobile-first design is mandatory.
-- Use media queries for better layout on smaller screens.
+🧠 FOR LEETCODE/DSA CLONE PROMPTS:
+- Build a split layout:
+   → Left Sidebar = Problem list with titles
+   → Right Panel = 
+     - Problem title and description (e.g. "Two Sum")
+     - A textarea or CodeMirror-styled editor
+     - A language dropdown (HTML select)
+     - A “Run Code” button
+     - A result/output area
+- Include one real DSA question with test case examples.
+- Add functional JS: On clicking “Run Code”, display a fake result like “All test cases passed” after delay.
+- All content must be visually styled, readable, and spaced.
 
-✨ INTERACTIONS:
-- Add some JavaScript interactivity (e.g., fake form submission message, animated skills, etc.)
+⚠ Respond only with clean, valid code blocks. No text outside. Never return partial layouts.
+`
+        },
+        {
+          role: 'user',
+          content: `Generate a responsive one-page website for this idea: ${prompt}`,
+        },
+      ],
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'GenAI Website Builder',
+      },
+    }
+  );
 
-⚠️ DO NOT:
-- Do not include <style> or <script> tags.
-- Do not write explanations or markdown text — return only the 3 code blocks.
-- Do not skip images or sections.
-
-Now generate a complete, rich, and beautiful portfolio website for this prompt:
-
-"${prompt}"
-`;
-
-    const result = await model.generateContent(systemPrompt);
-    let responseText = result.response.text();
-
-    // 🔁 Replace all <img> tags with working placeholder images
-    const imageUrls = [
-      'https://source.unsplash.com/400x300/?nature',
-      'https://source.unsplash.com/400x300/?technology',
-      'https://picsum.photos/400/300',
-    ];
-
-    responseText = responseText.replace(/<img[^>]*>/g, () => {
-      const src = imageUrls[Math.floor(Math.random() * imageUrls.length)];
-      return `<img src="${src}" alt="Portfolio image" style="max-width: 100%; border-radius: 10px;">`;
-    });
-
-    res.json({ code: responseText });
-  } catch (error) {
-    console.error("Gemini API Error:", error.message);
-    res.status(500).json({ error: "Website generation failed." });
-  }
+  const aiCode = response.data.choices[0].message.content;
+  res.json({ code: aiCode });
+} catch (error) {
+  console.error('OpenRouter error:', error.response?.data || error.message);
+  res.status(500).json({ error: 'Website generation failed.' });
+}
 });
 
 module.exports = router;
